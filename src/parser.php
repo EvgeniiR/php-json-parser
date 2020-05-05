@@ -84,3 +84,32 @@ function stringP(string $str): Closure {
         return new Res($rest, $res);
     };
 }
+
+/**
+ * @return Closure(string): Res<string>
+ */
+function ws(): Closure {
+    return spanP(fn(string $ch) => ctype_space($ch));
+}
+
+/**
+ * @param Closure(string): bool $span
+ * @return Closure(string): Res<string>
+ */
+function spanP(Closure $span): Closure {
+    return function (string $inp) use ($span): Res {
+        $rest = '';
+        $a = '';
+        $continue = true;
+        /** @var string $ch */
+        foreach (mb_str_split($inp) as $ch) {
+            if($continue && $span($ch)) {
+                $rest .= $ch;
+            } else {
+                $a .= $ch;
+                $continue = false;
+            }
+        }
+        return new Res($a, $rest);
+    };
+}
