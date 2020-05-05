@@ -7,23 +7,6 @@ namespace JsonParser;
 use Closure;
 
 /**
- * @template T
- */
-class Res {
-    public string $rest = '';
-
-    /** @psalm-var T */
-    public $a;
-
-    /** @psalm-param T $a */
-    public function __construct(string $rest, $a)
-    {
-        $this->rest = $rest;
-        $this->a = $a;
-    }
-}
-
-/**
  * @param Closure(string): ?Res<string> $closure
  */
 function runParser(Closure $closure, string $inp): ?Res {
@@ -34,7 +17,10 @@ function runParser(Closure $closure, string $inp): ?Res {
  * @return Closure(string): ?Res<string>
  */
 function jsonValue(): Closure {
-    return jsonNull();
+    return left(
+        right(ws(), jsonNull()),
+        ws()
+    );
 }
 
 /**
