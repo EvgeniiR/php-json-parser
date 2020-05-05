@@ -1,0 +1,22 @@
+{
+    "name": "evgeniy/php-json-parser",
+    "authors": [
+        {
+            "name": "EvgeniiR",
+            "email": "evgromr1@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "JsonParser\\": "src/"
+        },
+        "files": [
+            "src/common.php",
+            "src/parser.php"
+        ]
+    },
+    "require": {
+        "vimeo/psalm": "^3.11",
+        "thecodingmachine/safe": "^1.1"
+    }
+}
