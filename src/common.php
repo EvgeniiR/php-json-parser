@@ -8,6 +8,7 @@ use Closure;
 
 /**
  * @template T
+ * @psalm-immutable
  */
 class Res {
     public string $rest = '';
@@ -24,11 +25,12 @@ class Res {
 }
 
 /**
- * @template T
+ * @template TA
+ * @template TB
  *
- * @param Closure(string): ?Res<T> $a
- * @param Closure(string): ?Res<T> $b
- * @return Closure(string): ?Res<T>
+ * @param Closure(string): ?Res<TA> $a
+ * @param Closure(string): ?Res<TB> $b
+ * @return Closure(string): ?Res<TB>
  */
 function right(Closure $a, Closure $b): Closure {
     return function (string $inp) use ($a, $b): ?Res {
@@ -46,11 +48,12 @@ function right(Closure $a, Closure $b): Closure {
 }
 
 /**
- * @template T
+ * @template TA
+ * @template TB
  *
- * @param Closure(string): ?Res<T> $a
- * @param Closure(string): ?Res<T> $b
- * @return Closure(string): ?Res<T>
+ * @param Closure(string): ?Res<TA> $a
+ * @param Closure(string): ?Res<TB> $b
+ * @return Closure(string): ?Res<TA>
  */
 function left(Closure $a, Closure $b): Closure {
     return function (string $inp) use ($a, $b): ?Res {
@@ -68,5 +71,19 @@ function left(Closure $a, Closure $b): Closure {
         }
 
         return new Res($bRes->rest, $aRes->a);
+    };
+}
+
+/**
+ * @template TA
+ * @template TB
+ *
+ * @param Closure(string): ?Res<TA> $a
+ * @param Closure(string): ?Res<TB> $b
+ * @return Closure(string): null|Res<TA>|Res<TB>
+ */
+function oneOf(Closure $a, Closure $b): Closure {
+    return function (string $inp) use ($a, $b): ?Res {
+        return $a($inp) ?? $b($inp);
     };
 }

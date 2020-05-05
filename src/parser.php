@@ -7,6 +7,18 @@ namespace JsonParser;
 use Closure;
 
 /**
+ * @psalm-immutable
+ */
+class JsonBool {
+    public bool $val;
+
+    public function __construct(bool $val)
+    {
+        $this->val = $val;
+    }
+}
+
+/**
  * @param Closure(string): ?Res<string> $closure
  */
 function runParser(Closure $closure, string $inp): ?Res {
@@ -18,7 +30,10 @@ function runParser(Closure $closure, string $inp): ?Res {
  */
 function jsonValue(): Closure {
     return left(
-        right(ws(), jsonNull()),
+        right(
+            ws(),
+            oneOf(jsonNull(), jsonBool())
+        ),
         ws()
     );
 }
@@ -31,6 +46,13 @@ function jsonNull(): Closure
     return function (string $inp): ?Res {
         return stringP('null') ($inp);
     };
+}
+
+/**
+ * @return Closure(string): ?Res<string>
+ */
+function jsonBool(): Closure {
+    return oneOf(stringP('true'), stringP('false'));
 }
 
 /**
