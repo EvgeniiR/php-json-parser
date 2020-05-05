@@ -32,7 +32,7 @@ function jsonValue(): Closure {
     return left(
         right(
             ws(),
-            oneOf(jsonNull(), jsonBool())
+            oneOf(jsonNull(), jsonBool(), jsonString())
         ),
         ws()
     );
@@ -53,6 +53,13 @@ function jsonNull(): Closure
  */
 function jsonBool(): Closure {
     return oneOf(stringP('true'), stringP('false'));
+}
+
+/**
+ * @return Closure(string): ?Res<string>
+ */
+function jsonString(): Closure {
+    return stringLiteral();
 }
 
 /**
@@ -91,6 +98,21 @@ function stringP(string $str): Closure {
         }
         return new Res($rest, $res);
     };
+}
+
+/**
+ * @return Closure(string): ?Res<string>
+ */
+function stringLiteral(): Closure {
+    return left(
+        right(
+            charP('"'),
+            spanP(
+                fn(string $ch) => ($ch !== '"')
+            )
+        ),
+        charP('"'),
+    );
 }
 
 /**

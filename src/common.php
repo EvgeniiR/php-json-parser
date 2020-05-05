@@ -37,11 +37,7 @@ function right(Closure $a, Closure $b): Closure {
         /** @var Res|null $aRes */
         $aRes = $a($inp);
 
-        if($aRes === null) {
-            $bInp = $inp;
-        } else {
-            $bInp = $aRes->rest;
-        }
+        $bInp = $aRes === null ? $inp : $aRes->rest;
 
         return $b($bInp);
     };
@@ -75,15 +71,18 @@ function left(Closure $a, Closure $b): Closure {
 }
 
 /**
- * @template TA
- * @template TB
+ * @template T
  *
- * @param Closure(string): ?Res<TA> $a
- * @param Closure(string): ?Res<TB> $b
- * @return Closure(string): null|Res<TA>|Res<TB>
+ * @psalm-param array<Closure(string): ?Res<T>> $a
+ * @return Closure(string): null|Res<T>
  */
-function oneOf(Closure $a, Closure $b): Closure {
-    return function (string $inp) use ($a, $b): ?Res {
-        return $a($inp) ?? $b($inp);
+function oneOf(Closure ... $parsers): Closure {
+    return function (string $inp) use ($parsers): ?Res {
+        foreach ($parsers as $parser) {
+            if(($res = $parser($inp)) !== null) {
+                return $res;
+            }
+        }
+        return null;
     };
 }
