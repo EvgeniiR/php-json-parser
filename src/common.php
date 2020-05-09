@@ -37,9 +37,12 @@ function right(Closure $a, Closure $b): Closure {
         /** @var Res|null $aRes */
         $aRes = $a($inp);
 
-        $bInp = $aRes === null ? $inp : $aRes->rest;
 
-        return $b($bInp);
+        if($aRes === null) {
+            return null;
+        }
+
+        return $b($aRes->rest);
     };
 }
 

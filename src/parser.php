@@ -26,13 +26,13 @@ function runParser(Closure $closure, string $inp): ?Res {
 }
 
 /**
- * @return Closure(string): ?Res<string>
+ * @return Closure(string): ?Res<mixed>
  */
 function jsonValue(): Closure {
     return left(
         right(
             ws(),
-            oneOf(jsonNull(), jsonBool(), jsonString())
+            oneOf(jsonNull(), jsonBool(), jsonString(), jsonArray())
         ),
         ws()
     );
@@ -60,6 +60,68 @@ function jsonBool(): Closure {
  */
 function jsonString(): Closure {
     return stringLiteral();
+}
+
+/**
+ * @template T
+ *
+ * @return Closure(string): ?Res<list<T>>
+ */
+function jsonArray(): Closure {
+    $elements = sepBy(
+        left(
+            right(
+                ws(),
+                charP(',')
+            ),
+            ws()
+        ),
+        fn(string $inp) => jsonValue() ($inp)
+    );
+
+    return right(
+        right(
+            charP('['),
+            ws()
+        ),
+        left(
+            left(
+                $elements,
+                ws()
+            ),
+            charP(']')
+        )
+    );
+}
+
+/**
+ * @template T
+ * @template U
+ *
+ * @param Closure(string): ?Res<U> $sep
+ * @param Closure(string): ?Res<T> $elParser
+ * @return Closure(string): Res<list<T>>
+ */
+function sepBy(Closure $sep, Closure $elParser): Closure {
+    return function (string $inp) use ($sep, $elParser): Res {
+        $res = [];
+
+        $iterationRes = $elParser($inp);
+
+        if($iterationRes === null) {
+            return new Res($inp, []);
+        }
+
+        $res[] = is_scalar($iterationRes->a) ? $iterationRes->a : clone $iterationRes->a;
+        $rest = $iterationRes->rest;
+
+        while( ($iterationRes = right($sep, $elParser)($iterationRes->rest)) != null) {
+            $res[] = is_scalar($iterationRes->a) ? $iterationRes->a : clone $iterationRes->a;
+            $rest = $iterationRes->rest;
+        }
+
+        return new Res($rest, $res);
+    };
 }
 
 /**

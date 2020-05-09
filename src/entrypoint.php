@@ -6,6 +6,6 @@ namespace JsonParser;
 
 include __DIR__ . '/../vendor/autoload.php';
 
-$res = runParser(jsonValue(), '    "hello, world "   ');
+$res = runParser(jsonValue(), '["hello, world", "hello, world 2"]');
 
 print_r($res);
