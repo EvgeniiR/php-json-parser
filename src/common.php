@@ -7,7 +7,7 @@ namespace JsonParser;
 use Closure;
 
 /**
- * @template T
+ * @template-covariant T
  * @psalm-immutable
  */
 class Res {
@@ -53,7 +53,6 @@ function right(Closure $a, Closure $b): Closure {
  */
 function left(Closure $a, Closure $b): Closure {
     return function (string $inp) use ($a, $b): ?Res {
-        /** @var Res|null $aRes */
         $aRes = $a($inp);
 
         if($aRes === null) {
@@ -73,8 +72,8 @@ function left(Closure $a, Closure $b): Closure {
 /**
  * @template T
  *
- * @psalm-param array<Closure(string): ?Res<T>> $a
- * @return Closure(string): null|Res<T>
+ * @param array<Closure(string): ?Res<T>> $parsers
+ * @return Closure(string): ?Res<T>
  */
 function oneOf(Closure ... $parsers): Closure {
     return function (string $inp) use ($parsers): ?Res {
