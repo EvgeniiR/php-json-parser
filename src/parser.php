@@ -19,7 +19,10 @@ class JsonBool {
 }
 
 /**
- * @param Closure(string): ?Res<string> $closure
+ * @template T
+ *
+ * @param Closure(string): ?Res<T> $closure
+ * @psalm-return null|Res<T>
  */
 function runParser(Closure $closure, string $inp): ?Res {
    return $closure($inp);
@@ -32,7 +35,7 @@ function jsonValue(): Closure {
     return left(
         right(
             ws(),
-            oneOf(jsonNull(), jsonBool(), jsonString(), jsonArray())
+            oneOf(jsonNull(), jsonBool(), jsonString(), jsonArray(), jsonNumber())
         ),
         ws()
     );
@@ -49,10 +52,13 @@ function jsonNull(): Closure
 }
 
 /**
- * @return Closure(string): ?Res<string>
+ * @return Closure(string): ?Res<bool>
  */
 function jsonBool(): Closure {
-    return oneOf(stringP('true'), stringP('false'));
+    return oneOf(
+        inject(true, stringP('true')),
+        inject(false, stringP('false'))
+    );
 }
 
 /**
@@ -92,6 +98,103 @@ function jsonArray(): Closure {
             charP(']')
         )
     );
+}
+
+/**
+ * @template T
+ *
+ * @return Closure(string): ?Res<float>
+ */
+function jsonNumber(): Closure {
+    return function (string $inp): ?Res {
+        $minus = inject(-1, charP('-'));
+        $digits = spanP(fn(string $ch) => ctype_digit($ch));
+        $plus = inject(1, charP('+'));
+        $e = oneOf(charP('e'), charP('E'));
+
+        $sign = $minus ($inp);
+        $inp = $sign === null ? $inp : $sign->rest;
+
+        $integral = notNull($digits) ($inp);
+        if($integral === null) {
+            return null;
+        }
+        $inp = $integral->rest;
+
+        $dot = charP('.')($inp);
+        $inp = $dot === null ? $inp : $dot->rest;
+
+        $decimalPartDigits = notNull($digits);
+
+        $decimalPart = $dot !== null ?
+            applicativeApply(
+                fn(string $inp) => new Res($inp, fn(string $str) => $dot->a . $str),
+                $decimalPartDigits
+            ) ($inp) :
+            null;
+
+        $inp = $decimalPart === null ? $inp : $decimalPart->rest;
+
+        $exponent = right(
+            $e,
+            applicativeApply(
+                function (string $input) use ($plus, $minus): Res {
+                    $res = oneOf($plus, $minus, fn(string $inp) => new Res($inp, 1)) ($input);
+
+                    if ($res === null) {
+                        throw new \RuntimeException('Unexepected null');
+                    }
+
+                    return new Res($res->rest, fn(string $digits) => (int)$digits * $res->a);
+                },
+                $digits
+            )
+        ) ($inp);
+
+        $inp = $exponent === null ? $inp : $exponent->rest;
+
+        return new Res(
+            $exponent !== null ? $exponent->rest : $inp,
+            numberFromParts(
+                $sign !== null ? $sign->a : 1,
+                (int)($integral->a),
+                $decimalPart !== null ? (float)$decimalPart->a : 0.0,
+                $exponent !== null ? $exponent->a : 0
+            )
+        );
+    };
+}
+
+function numberFromParts(
+    int $sign,
+    int $integral,
+    float $decimalPart,
+    int $exponent
+): float {
+    return (float)$sign * ((float)$integral + $decimalPart) * (float)(pow(10, $exponent));
+}
+
+/**
+ * @template T of (array|string)
+ *
+ * @param Closure(string): ?Res<T> $parser
+ *
+ * @return Closure(string): ?Res<T>
+ */
+function notNull($parser): Closure {
+    return function (string $inp) use ($parser): ?Res {
+        $res = $parser($inp);
+
+        if($res === null) {
+            return null;
+        }
+
+        if((empty($res->a))) {
+            return null;
+        }
+
+        return $res;
+    };
 }
 
 /**
@@ -190,18 +293,18 @@ function ws(): Closure {
  */
 function spanP(Closure $span): Closure {
     return function (string $inp) use ($span): Res {
-        $rest = '';
         $a = '';
+        $rest = '';
         $continue = true;
         /** @var string $ch */
         foreach (mb_str_split($inp) as $ch) {
             if($continue && $span($ch)) {
-                $rest .= $ch;
-            } else {
                 $a .= $ch;
+            } else {
+                $rest .= $ch;
                 $continue = false;
             }
         }
-        return new Res($a, $rest);
+        return new Res($rest, $a);
     };
 }

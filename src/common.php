@@ -88,3 +88,47 @@ function oneOf(Closure ... $parsers): Closure {
         return null;
     };
 }
+
+/**
+ * @template T
+ *
+ * @psalm-param T $valueToInject
+ * @param mixed $valueToInject
+ * @param Closure(string): ?Res<mixed> $functor
+ *
+ * @return Closure(string): ?Res<T>
+ */
+function inject($valueToInject, Closure $functor): Closure {
+    return function (string $inp) use ($valueToInject, $functor): ?Res {
+        $res = $functor ($inp);
+
+        if($res === null) {
+            return null;
+        }
+
+        return new Res($res->rest, $valueToInject);
+    };
+}
+
+/**
+ * @template A
+ * @template B
+ *
+ * @param Closure(string): Res<Closure(A): B> $a
+ * @param Closure(string): ?Res<A> $b
+ *
+ * @return Closure(string): ?Res<B>
+ */
+function applicativeApply(Closure $a, Closure $b): Closure {
+    return function (string $inp) use ($a, $b): ?Res {
+        $aRes = $a ($inp);
+        $func = $aRes->a;
+
+        $bRes = $b ($aRes->rest);
+        if($bRes === null) {
+            return null;
+        }
+
+        return new Res($bRes->rest, $func($bRes->a));
+    };
+}
