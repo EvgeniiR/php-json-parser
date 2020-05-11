@@ -114,6 +114,27 @@ function inject($valueToInject, Closure $functor): Closure {
  * @template A
  * @template B
  *
+ * @param Closure(A): B $functor
+ * @param Closure(string): ?Res<A> $b
+ *
+ * @return Closure(string): ?Res<B>
+ */
+function apply(Closure $functor, Closure $b): Closure {
+    return function (string $inp) use ($functor, $b): ?Res {
+        $bRes = $b ($inp);
+
+        if($bRes === null) {
+            return null;
+        }
+
+        return new Res($bRes->rest, $functor($bRes->a));
+    };
+}
+
+/**
+ * @template A
+ * @template B
+ *
  * @param Closure(string): Res<Closure(A): B> $a
  * @param Closure(string): ?Res<A> $b
  *

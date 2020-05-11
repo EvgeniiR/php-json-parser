@@ -127,8 +127,8 @@ function jsonNumber(): Closure {
         $decimalPartDigits = notNull($digits);
 
         $decimalPart = $dot !== null ?
-            applicativeApply(
-                fn(string $inp) => new Res($inp, fn(string $str) => $dot->a . $str),
+            apply(
+                fn(string $str) => $dot->a . $str,
                 $decimalPartDigits
             ) ($inp) :
             null;
