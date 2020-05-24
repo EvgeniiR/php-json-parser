@@ -103,6 +103,32 @@ function jsonArray(): Closure {
 /**
  * @template T
  *
+ * @psalm-param Closure(string): ?Res<T> ...$closures
+ *
+ * @psalm-return Closure(string): list<?Res<T>>
+ */
+function foo(Closure ... $closures) {
+    return function (string $inp) use ($closures): array {
+        $res = [];
+        $rest = $inp;
+
+        foreach ($closures as $closure) {
+            $iRes = $closure($rest);
+
+            if($iRes !== null) {
+                $rest = $iRes->rest;
+            }
+
+            $res[] = $iRes;
+        }
+
+        return $res;
+    };
+}
+
+/**
+ * @template T
+ *
  * @return Closure(string): ?Res<float>
  */
 function jsonNumber(): Closure {
@@ -111,6 +137,8 @@ function jsonNumber(): Closure {
         $digits = spanP(fn(string $ch) => ctype_digit($ch));
         $plus = inject(1, charP('+'));
         $e = oneOf(charP('e'), charP('E'));
+
+        [$sign, $integral, $dot] = foo($minus, notNull($digits), charP('.'))($inp);
 
         $sign = $minus ($inp);
         $inp = $sign === null ? $inp : $sign->rest;
@@ -142,7 +170,7 @@ function jsonNumber(): Closure {
                     $res = oneOf($plus, $minus, fn(string $inp) => new Res($inp, 1)) ($input);
 
                     if ($res === null) {
-                        throw new \RuntimeException('Unexepected null');
+                        throw new \RuntimeException('Unexpected null');
                     }
 
                     return new Res($res->rest, fn(string $digits) => (int)$digits * $res->a);
