@@ -180,6 +180,11 @@ function curry(Closure $fn) {
     $arity = (new \ReflectionFunction($fn))->getNumberOfRequiredParameters();
 
     if($arity === 0) {
+        // @var annotations shouldn't be here at all, but without them, psalm is still crashing with an error ( https://github.com/vimeo/psalm/issues/3434 )
+        //      Also there's a bug with nested closures https://github.com/vimeo/psalm/issues/3431
+        //
+        //  This method here is just a keepsake, it isn't ready for using, it would be ideal to implement it via recursion,
+        //      but with the current psalm capabilities it is not possible
         /** @var Closure(): TRes $fn */
         return fn() => $fn();
     }
