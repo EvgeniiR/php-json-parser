@@ -42,12 +42,12 @@ function jsonValue(): Closure {
 }
 
 /**
- * @return Closure(string): ?Res<string>
+ * @return Closure(string): ?Res<null>
  */
 function jsonNull(): Closure
 {
     return function (string $inp): ?Res {
-        return stringP('null') ($inp);
+        return inject(null, stringP('null')) ($inp);
     };
 }
 
@@ -189,7 +189,7 @@ function notNull($parser): Closure {
             return null;
         }
 
-        if((empty($res->a))) {
+        if($res->a === '' || $res->a === []) {
             return null;
         }
 
@@ -215,11 +215,11 @@ function sepBy(Closure $sep, Closure $elParser): Closure {
             return new Res($inp, []);
         }
 
-        $res[] = is_scalar($iterationRes->a) ? $iterationRes->a : clone $iterationRes->a;
+        $res[] = is_scalar($iterationRes->a) ? $iterationRes->a : (clone $iterationRes)->a;
         $rest = $iterationRes->rest;
 
         while( ($iterationRes = right($sep, $elParser)($iterationRes->rest)) != null) {
-            $res[] = is_scalar($iterationRes->a) ? $iterationRes->a : clone $iterationRes->a;
+            $res[] = is_scalar($iterationRes->a) ? $iterationRes->a : (clone $iterationRes)->a;
             $rest = $iterationRes->rest;
         }
 

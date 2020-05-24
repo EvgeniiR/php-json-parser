@@ -14,6 +14,7 @@
 >
     <projectFiles>
         <directory name="src"/>
+        <directory name="tests"/>
         <ignoreFiles>
             <file name="src/entrypoint.php"/>
             <directory name="vendor"/>

@@ -153,3 +153,54 @@ function applicativeApply(Closure $a, Closure $b): Closure {
         return new Res($bRes->rest, $func($bRes->a));
     };
 }
+
+/**
+ * @template TArg1
+ * @template TArg2
+ * @template TRes
+ * @template T as (Closure(): TRes | Closure(TArg1): TRes | Closure(TArg1, TArg2): TRes)
+ *
+ * @psalm-param T $fn
+ *
+ * @psalm-return (
+ *   T is (Closure(TArg1, TArg2): TRes)
+ *   ? (Closure(TArg1): (Closure(TArg2): (Closure(): TRes)))
+ *   : (
+ *       T is (Closure(TArg1): TRes)
+ *       ? (Closure(TArg1): (Closure(): TRes))
+ *       : (
+ *           T is (Closure(): TRes)
+ *           ? (Closure(): TRes)
+ *           : bool
+ *         )
+ *     )
+ * )
+ */
+function curry(Closure $fn) {
+    $arity = (new \ReflectionFunction($fn))->getNumberOfRequiredParameters();
+
+    if($arity === 0) {
+        /** @var Closure(): TRes $fn */
+        return fn() => $fn();
+    }
+
+    if($arity === 1) {
+        /** @var Closure(TArg1): TRes $fn */
+        return
+            /** @psalm-param TArg1 $arg */
+            function($arg) use ($fn) {
+                return curry($fn)($arg);
+            };
+    }
+
+    if($arity === 2) {
+        /** @var Closure(TArg1, TArg2): TRes $fn */
+        return
+            /** @psalm-param TArg1 $arg */
+            function($arg) use ($fn) {
+                return curry($fn)($arg);
+            };
+    }
+
+    throw new \RuntimeException();
+}
